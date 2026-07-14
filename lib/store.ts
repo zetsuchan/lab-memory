@@ -86,7 +86,9 @@ async function pg(): Promise<Sql> {
         created_at BIGINT NOT NULL,
         data JSONB NOT NULL
       )`;
-      return pool as unknown as { sql: Sql };
+      // Bind sql to the pool — extracting it bare loses `this` and throws
+      // "Cannot read properties of undefined (reading 'connectionString')".
+      return { sql: pool.sql.bind(pool) as Sql };
     })();
   }
   return (await poolPromise).sql;
