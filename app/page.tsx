@@ -246,10 +246,12 @@ function UploadView(props: {
 }) {
   const { staged, over, uploading, err } = props;
   return (
-    <>
-      <h1 className="headline">Upload your data. Ask what it knows.</h1>
-      <p className="sub">Drop in papers, notebooks, CSVs, or notes. Lab Memory reads them, builds a
-        session, and answers questions with citations back to your files — powered by Claude.</p>
+    <div className="hero">
+      <span className="eyebrow">🧠 Lab Memory · institutional memory for research teams</span>
+      <h1 className="hero-title">Your data already knows more than you can remember.</h1>
+      <p className="hero-sub">Drop in a team&rsquo;s papers, notebooks, data, protocols, and notes.
+        Lab Memory reads all of it, builds a knowledge graph, and answers your questions with a
+        citation to the exact source for every claim — powered by Claude.</p>
 
       <div
         className={"drop" + (over ? " over" : "")}
@@ -280,7 +282,13 @@ function UploadView(props: {
         </div>
       )}
       {err && <div className="err">{err}</div>}
-    </>
+
+      <div className="steps">
+        <div className="step-card"><span className="sn">01</span><b>Upload anything</b><p>CSVs, markdown, notes, exported data — dropped in as one session.</p></div>
+        <div className="step-card"><span className="sn">02</span><b>Ask in plain English</b><p>&ldquo;Why did we abandon this program?&rdquo; · &ldquo;What did we never try?&rdquo;</p></div>
+        <div className="step-card"><span className="sn">03</span><b>Get cited answers</b><p>A reasoning chain, a source for every claim, and the next question to ask.</p></div>
+      </div>
+    </div>
   );
 }
 
