@@ -13,13 +13,23 @@ import { toMeta } from "./types";
 
 // Vercel's Postgres/Neon integrations inject the connection string under one of
 // several names depending on which you pick — accept any of them.
-const PG_URL =
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.DATABASE_URL_UNPOOLED ||
-  "";
+function findPgUrl(): string {
+  // Prefer well-known names (pooled first), then fall back to scanning every
+  // env var for a Postgres URL — so ANY provider/prefix (STORAGE_URL, etc.) works.
+  const known = [
+    process.env.POSTGRES_URL,
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.DATABASE_URL_UNPOOLED,
+  ].find(Boolean);
+  if (known) return known;
+  const scanned = Object.values(process.env).find(
+    (v) => typeof v === "string" && /^postgres(ql)?:\/\//.test(v)
+  );
+  return scanned || "";
+}
+const PG_URL = findPgUrl();
 const usePg = !!PG_URL;
 
 // ---------- file backend ----------
