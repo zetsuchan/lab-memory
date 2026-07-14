@@ -11,7 +11,16 @@ import { toMeta } from "./types";
  *  - Local file store (default for `npm run dev`): JSON files under .data/.
  */
 
-const usePg = !!(process.env.POSTGRES_URL || process.env.DATABASE_URL);
+// Vercel's Postgres/Neon integrations inject the connection string under one of
+// several names depending on which you pick — accept any of them.
+const PG_URL =
+  process.env.POSTGRES_URL ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  "";
+const usePg = !!PG_URL;
 
 // ---------- file backend ----------
 const DATA_DIR = path.join(process.cwd(), ".data", "sessions");
@@ -50,20 +59,22 @@ const fileStore = {
 };
 
 // ---------- postgres backend ----------
-let pgReady: Promise<void> | null = null;
-async function pgInit() {
-  const { sql } = await import("@vercel/postgres");
-  await sql`CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    data JSONB NOT NULL
-  )`;
-}
-async function pg() {
-  const mod = await import("@vercel/postgres");
-  if (!pgReady) pgReady = pgInit();
-  await pgReady;
-  return mod.sql;
+type Sql = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<{ rows: any[] }>;
+let poolPromise: Promise<{ sql: Sql }> | null = null;
+async function pg(): Promise<Sql> {
+  if (!poolPromise) {
+    poolPromise = (async () => {
+      const { createPool } = await import("@vercel/postgres");
+      const pool = createPool({ connectionString: PG_URL });
+      await pool.sql`CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        created_at BIGINT NOT NULL,
+        data JSONB NOT NULL
+      )`;
+      return pool as unknown as { sql: Sql };
+    })();
+  }
+  return (await poolPromise).sql;
 }
 const pgStore = {
   async list(): Promise<SessionMeta[]> {
