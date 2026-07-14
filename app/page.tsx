@@ -83,8 +83,10 @@ export default function Page() {
       const fd = new FormData();
       staged.forEach((f) => fd.append("files", f));
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "upload failed");
+      const raw = await res.text();
+      let data: { id?: string; error?: string } = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { /* non-JSON error page */ }
+      if (!res.ok || !data.id) throw new Error(data.error || `Upload failed (HTTP ${res.status})`);
       setStaged([]);
       await loadSessions();
       setActiveId(data.id);

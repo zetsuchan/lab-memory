@@ -33,7 +33,12 @@ const PG_URL = findPgUrl();
 const usePg = !!PG_URL;
 
 // ---------- file backend ----------
-const DATA_DIR = path.join(process.cwd(), ".data", "sessions");
+// On Vercel the project filesystem is read-only; only /tmp is writable. Locally
+// use .data/. (On serverless, /tmp is per-instance and not durable — Postgres is
+// the real backend in production; this just prevents hard crashes.)
+const DATA_DIR = process.env.VERCEL
+  ? path.join("/tmp", "lab-memory", "sessions")
+  : path.join(process.cwd(), ".data", "sessions");
 async function ensureDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
 }
